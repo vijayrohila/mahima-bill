@@ -1,0 +1,10 @@
+{
+    "appId": "com.mycompany.billing",
+    "asar": true,
+    "asarUnpack": ["node_modules/better-sqlite3/**/*"],
+    "files": ["**/*"],
+    "win": {
+      "target": "nsis"
+    }
+  }
+  

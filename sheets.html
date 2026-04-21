@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCC Records - Software Billing System</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Flatpickr (date picker with DD-MM-YYYY format) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>RCC Records Management</h1>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+            <span id="sheetsCompanyLabel" style="font-size: 0.95rem; color: white;"></span>
+            <button id="btnBack" class="btn btn-secondary">Back to Invoice</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div style="margin-bottom: 0.25rem;">
+            <h2 style="margin: 0; font-size: 1.1rem; color: #333;">Add RCC Record</h2>
+        </div>
+        <div class="form-actions" style="margin-bottom: 1rem;">
+            <button id="btnAddNewSheet" class="btn btn-primary">+ Add RCC Record</button>
+            <button id="btnDownloadSheetsPDF" class="btn btn-success">Download PDF</button>
+            <button id="btnProductSummary" class="btn btn-info">Product Summary</button>
+        </div>
+
+        <!-- Inline RCC Record Form (Accordion style) -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+            <tbody id="sheetFormAccordionDefaultBody">
+                <tr id="sheetFormAccordion" style="display: none;">
+                    <td colspan="13" style="padding: 0;">
+                        <div style="border: 1px solid #ddd; border-radius: 6px; background: #ffffff; margin-top: 0.5rem;">
+                            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600;">RCC Record Details</span>
+                                <button id="btnToggleSheetForm" class="btn btn-secondary btn-small">Hide</button>
+                            </div>
+                            <div style="padding: 1rem;">
+                                <!-- Add form: same field names as list columns (single row) -->
+                                <div id="rccSheetFormRoot">
+                                    <div style="overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Invoice No</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Product</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Weight</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Truck No</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Ralti</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Rate</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">B Rate</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">GST %</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Amount</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Amt w/ GST</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Date</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="text" id="sheetFormInvoiceNo" data-sheet-field="invoice_no" required class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <select id="sheetFormProduct" data-sheet-field="product_id" required class="rcc-add-input"></select>
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormWeight" data-sheet-field="weight" step="1" value="0" class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="text" id="sheetFormTruckNumber" data-sheet-field="truck_number" class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <select id="sheetFormRalti" data-sheet-field="ralti" required class="rcc-add-input">
+                                                            <option value="Yes">Yes</option>
+                                                            <option value="No" selected>No</option>
+                                                        </select>
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormRate" data-sheet-field="rate" step="1" value="0" class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormBRate" data-sheet-field="b_rate" step="0.01" value="0" class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormGst" data-sheet-field="gst" step="1" value="5" class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormAmount" data-sheet-field="amount" step="0.01" value="0" readonly class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormAmountWithGst" data-sheet-field="amount_with_gst" step="0.01" value="0" readonly class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="text" id="sheetFormDate" data-sheet-field="date" placeholder="DD-MM-YYYY" required class="rcc-add-input" style="background: #fff;" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem; vertical-align: bottom;">
+                                                        <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                                            <button type="button" id="btnSaveSheetForm" class="btn btn-success btn-small" title="Save" aria-label="Save">✓</button>
+                                                            <button type="button" id="btnCancelSheetForm" class="btn btn-secondary btn-small" title="Cancel" aria-label="Cancel">✕</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Filters -->
+        <div style="margin-bottom: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 5px;">
+            <!-- Search Box -->
+            <div class="form-row" style="margin-bottom: 1rem;">
+                <div class="form-field full-width">
+                    <label>Search</label>
+                    <input type="text" id="filterSearch" placeholder="Search by Invoice No, Product, Truck Number..." style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+            </div>
+            <!-- Date Range and Other Filters -->
+            <div class="form-row" style="margin-bottom: 1rem;">
+                <div class="form-field">
+                    <label>From Date</label>
+                    <input type="text" id="filterFromDate" placeholder="DD-MM-YYYY" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px; background: #fff;">
+                </div>
+                <div class="form-field">
+                    <label>To Date</label>
+                    <input type="text" id="filterToDate" placeholder="DD-MM-YYYY" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px; background: #fff;">
+                </div>
+                <div class="form-field">
+                    <label>Filter by Product</label>
+                    <select id="filterProduct" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="">All Products</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Filter by Ralti</label>
+                    <select id="filterRalti" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="">All</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Sort Options -->
+            <div class="form-row" style="margin-bottom: 1rem;">
+                <div class="form-field">
+                    <label>Sort By</label>
+                    <select id="sortBy" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="date">Date</option>
+                        <option value="invoice_no">Invoice Number</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Sort Order</label>
+                    <select id="sortOrder" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="DESC">Descending (Newest/Largest First)</option>
+                        <option value="ASC">Ascending (Oldest/Smallest First)</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>PDF Columns</label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; padding-top: 0.75rem;">
+                        <input type="checkbox" id="filterShowBRatePdf" checked>
+                        Show B Rate in PDF
+                    </label>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-field" style="display: flex; align-items: flex-end;">
+                    <button id="btnClearFilters" class="btn btn-secondary" style="width: 100%;">Clear All Filters</button>
+                </div>
+            </div>
+        </div>
+        <table class="data-table rcc-records-table">
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Invoice No</th>
+                    <th>Product</th>
+                    <th>Weight</th>
+                    <th>Truck Number</th>
+                    <th>Ralti</th>
+                    <th>Rate</th>
+                    <th>B Rate</th>
+                    <th>GST</th>
+                    <th>Amount</th>
+                    <th>Amount with GST</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="sheetsTableBody">
+                <!-- Sheets will be loaded here -->
+            </tbody>
+        </table>
+        <!-- Pagination -->
+        <div id="sheetsPagination" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: #666;">
+                <span id="sheetsPaginationInfo">Showing 0 - 0 of 0 records</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="btnSheetsPrev" class="btn btn-secondary btn-small" disabled>Previous</button>
+                <span id="sheetsPageNumbers" style="display: flex; gap: 0.3rem;"></span>
+                <button id="btnSheetsNext" class="btn btn-secondary btn-small" disabled>Next</button>
+            </div>
+            <div>
+                <label style="margin-right: 0.5rem;">Records per page:</label>
+                <select id="sheetsPerPage" style="padding: 0.4rem; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="apiLoaderOverlay" class="api-loader-overlay" aria-hidden="true">
+        <div class="api-loader-spinner" role="status" aria-label="Loading"></div>
+    </div>
+
+    <script src="api-loader-install.js"></script>
+    <script src="sheets.js"></script>
+</body>
+</html>
+

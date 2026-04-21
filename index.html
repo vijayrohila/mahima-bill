@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Billing - Invoice System</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Flatpickr (date picker with DD-MM-YYYY format) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div id="loginPage" class="login-page" style="display: none;">
+        <div class="login-card">
+            <h2>Login Required</h2>
+            <p class="login-subtitle">Connect to API and login to continue.</p>
+            <div class="form-group">
+                <div class="form-field">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="admin@example.com">
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="form-field">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Password">
+                </div>
+            </div>
+            <div class="form-actions login-actions">
+                <button id="btnLoginPageSubmit" class="btn btn-primary">Login</button>
+            </div>
+            <small id="loginPageStatus" class="login-status">Please login to access the application.</small>
+        </div>
+    </div>
+
+    <div id="appShell">
+    <!-- Header -->
+    <header class="header">
+        <h1>Software Billing System</h1>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div class="header-company-field">
+                <label for="companySelect">Company</label>
+                <select id="companySelect" class="form-select">
+                    <option value="">-- Select Company --</option>
+                </select>
+                <button id="btnManageCompanies" class="btn btn-secondary">Manage Companies</button>
+            </div>
+            <button id="btnSettings" class="btn btn-secondary">Settings</button>
+            <button id="btnCustomers" class="btn btn-secondary">Customers</button>
+            <button id="btnProducts" class="btn btn-secondary">Products</button>
+            <button id="btnInvoices" class="btn btn-secondary">Invoices</button>
+            <button id="btnSheets" class="btn btn-secondary">RCC Records</button>
+            <button id="btnChangePasswordScreen" class="btn btn-secondary">Change Password</button>
+            <button id="btnMigrateLocalScreen" class="btn btn-secondary">Local to MySQL</button>
+            <button id="btnUserLogout" class="btn btn-secondary">Logout</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Billing Form Section -->
+        <section id="billingSection" class="billing-section">
+            <h2 id="billingSectionTitle">Create New Invoice</h2>
+            
+            <!-- Invoice Header -->
+            <div class="form-group">
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Invoice Number</label>
+                        <input type="text" id="invoiceNumber" placeholder="e.g. 01">
+                    </div>
+                    <div class="form-field">
+                        <label>Invoice Date</label>
+                        <input type="text" id="invoiceDate" placeholder="DD-MM-YYYY" style="background: #fff;">
+                    </div>
+                    <div class="form-field">
+                        <label>TP Number</label>
+                        <input type="text" id="tpNumber">
+                    </div>
+                    <div class="form-field">
+                        <label>Vehicle Number</label>
+                        <input type="text" id="vehicleNumber">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Selection -->
+            <div class="form-group">
+                <label>Select Customer</label>
+                <div class="form-row">
+                    <select id="customerSelect" class="form-select">
+                        <option value="">-- Select Customer --</option>
+                    </select>
+                    <button id="btnAddCustomer" class="btn btn-small">+ Add Customer</button>
+                </div>
+                <div id="customerDetails" class="customer-details" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>Name</label>
+                            <input type="text" id="customerName" readonly>
+                        </div>
+                        <div class="form-field">
+                            <label>GSTIN</label>
+                            <input type="text" id="customerGstin" readonly>
+                        </div>
+                        <div class="form-field">
+                            <label>Mobile</label>
+                            <input type="text" id="customerMobile" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field full-width">
+                            <label>Billed Address</label>
+                            <input type="text" id="customerBilledAddress" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field full-width">
+                            <label>Shipped Address</label>
+                            <input type="text" id="customerShippedAddress" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label>State</label>
+                            <input type="text" id="customerState" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Items -->
+            <div class="form-group">
+                <div class="section-header">
+                    <h3>Items</h3>
+                    <button id="btnAddItem" class="btn btn-primary">+ Add Item</button>
+                </div>
+                <table id="itemsTable" class="items-table">
+                    <thead>
+                        <tr>
+                            <th>S.No.</th>
+                            <th>Description of Goods</th>
+                            <th>HSN Code</th>
+                            <th>Qty (Qtl)</th>
+                            <th>Price</th>
+                            <th>Amount</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <!-- Items will be added dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tax and Total Section -->
+            <div class="form-group">
+                <div class="totals-section">
+                    <div class="totals-right">
+                        <div class="total-row">
+                            <span>Total Value of Goods:</span>
+                            <span id="totalValue">0.00</span>
+                        </div>
+                        <div class="total-row">
+                            <span>SGST @ <input type="number" id="sgstRate" step="1" value="2.5" style="width: 60px;">%:</span>
+                            <span id="sgstAmount">0.00</span>
+                        </div>
+                        <div class="total-row">
+                            <span>CGST @ <input type="number" id="cgstRate" step="1" value="2.5" style="width: 60px;">%:</span>
+                            <span id="cgstAmount">0.00</span>
+                        </div>
+                        <div class="total-row total-final">
+                            <span>Total Amount After Tax:</span>
+                            <span id="totalAmount">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions">
+                <button id="btnPrintInvoice" class="btn btn-primary" style="display: none;">Print Invoice</button>
+                <button id="btnUpdateInvoice" class="btn btn-primary" style="display: none;">Update Invoice</button>
+                <button id="btnDownloadPDF" class="btn btn-primary">Download Invoice</button>
+                <button id="btnNewInvoice" class="btn btn-secondary">New Invoice</button>
+            </div>
+        </section>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="form-row">
+                            <div class="form-field full-width">
+                                <label>Database Location</label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="text" id="settingsDatabasePath" readonly style="flex: 1; background: #f5f5f5;">
+                                    <button id="btnChooseDatabaseLocation" class="btn btn-secondary">Choose Location</button>
+                                </div>
+                                <small style="color: #666; margin-top: 0.25rem; display: block;">Change where the database file is stored</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">
+                        <label style="font-weight: 600;">Invoice number</label>
+                        <div style="margin-top: 0.5rem;">
+                            <span style="color: #666;">Next invoice number will be: </span>
+                            <strong id="settingsNextInvoiceNumber">—</strong>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                            <label style="margin: 0;">Set next invoice number to:</label>
+                            <input type="number" id="settingsInvoiceNumberInput" min="1" step="1" placeholder="e.g. 6" style="width: 80px; padding: 0.4rem; border: 1px solid #ddd; border-radius: 5px;">
+                            <button type="button" id="btnSetInvoiceNumberSettings" class="btn btn-secondary">Set</button>
+                        </div>
+                        <button type="button" id="btnResetInvoiceNumberSettings" class="btn btn-secondary" style="margin-top: 0.5rem;">Reset to 01</button>
+                        <small style="color: #666; display: block; margin-top: 0.25rem;">Set the next invoice number for the current company, or reset to 01.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Companies Modal (list + add) -->
+        <div id="companiesModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Manage Companies</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-actions">
+                        <button id="btnAddNewCompany" class="btn btn-primary">+ Add New Company</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>GSTIN</th>
+                                <th>Mobile</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companiesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Company Form Modal (add/edit company details) -->
+        <div id="companyFormModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="companyFormTitle">Add Company</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="companyFormId" value="">
+                    <div class="form-group">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Company Name</label>
+                                <input type="text" id="companyFormName">
+                            </div>
+                            <div class="form-field">
+                                <label>GSTIN</label>
+                                <input type="text" id="companyFormGstin">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Mobile</label>
+                                <input type="text" id="companyFormMobile">
+                            </div>
+                            <div class="form-field">
+                                <label>Email</label>
+                                <input type="email" id="companyFormEmail">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field full-width">
+                                <label>Address</label>
+                                <textarea id="companyFormAddress" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Bank Name</label>
+                                <input type="text" id="companyFormBankName">
+                            </div>
+                            <div class="form-field">
+                                <label>Account Number</label>
+                                <input type="text" id="companyFormAccountNumber">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>IFSC Code</label>
+                                <input type="text" id="companyFormIfscCode">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field full-width">
+                                <label>Terms & Conditions</label>
+                                <textarea id="companyFormTerms" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btnSaveCompanyForm" class="btn btn-success">Save Company</button>
+                        <button id="btnCancelCompanyForm" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Modal -->
+        <div id="customersModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Manage Customers</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-actions">
+                        <button id="btnAddNewCustomer" class="btn btn-primary">+ Add New Customer</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>GSTIN</th>
+                                <th>Mobile</th>
+                                <th>Billed Address</th>
+                                <th>Shipped Address</th>
+                                <th>State</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTableBody">
+                            <!-- Customers will be loaded here -->
+                        </tbody>
+                    </table>
+                    <!-- Pagination -->
+                    <div id="customersPagination" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #666;">
+                            <span id="customersPaginationInfo">Showing 0 - 0 of 0 records</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button id="btnCustomersPrev" class="btn btn-secondary btn-small" disabled>Previous</button>
+                            <span id="customersPageNumbers" style="display: flex; gap: 0.3rem;"></span>
+                            <button id="btnCustomersNext" class="btn btn-secondary btn-small" disabled>Next</button>
+                        </div>
+                        <div>
+                            <label style="margin-right: 0.5rem;">Records per page:</label>
+                            <select id="customersPerPage" style="padding: 0.4rem; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Form Modal -->
+        <div id="customerFormModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="customerFormTitle">Add Customer</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Name *</label>
+                                <input type="text" id="customerFormName" required>
+                            </div>
+                            <div class="form-field">
+                                <label>GSTIN</label>
+                                <input type="text" id="customerFormGstin">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Mobile</label>
+                                <input type="text" id="customerFormMobile">
+                            </div>
+                            <div class="form-field">
+                                <label>State</label>
+                                <input type="text" id="customerFormState">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Pincode</label>
+                                <input type="text" id="customerFormPincode">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field full-width">
+                                <label>Billed Address</label>
+                                <textarea id="customerFormBilledAddress" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field full-width">
+                                <label>Shipped Address</label>
+                                <textarea id="customerFormShippedAddress" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btnSaveCustomerForm" class="btn btn-success">Save Customer</button>
+                        <button id="btnCancelCustomerForm" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Modal -->
+        <div id="productsModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Manage Products</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-actions">
+                        <button id="btnAddNewProduct" class="btn btn-primary">+ Add New Product</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>HSN Code</th>
+                                <th>Unit</th>
+                                <th>Rate</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <!-- Products will be loaded here -->
+                        </tbody>
+                    </table>
+                    <!-- Pagination -->
+                    <div id="productsPagination" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #666;">
+                            <span id="productsPaginationInfo">Showing 0 - 0 of 0 records</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button id="btnProductsPrev" class="btn btn-secondary btn-small" disabled>Previous</button>
+                            <span id="productsPageNumbers" style="display: flex; gap: 0.3rem;"></span>
+                            <button id="btnProductsNext" class="btn btn-secondary btn-small" disabled>Next</button>
+                        </div>
+                        <div>
+                            <label style="margin-right: 0.5rem;">Records per page:</label>
+                            <select id="productsPerPage" style="padding: 0.4rem; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Form Modal -->
+        <div id="productFormModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="productFormTitle">Add Product</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Name *</label>
+                                <input type="text" id="productFormName" required>
+                            </div>
+                            <div class="form-field">
+                                <label>HSN Code</label>
+                                <input type="text" id="productFormHsnCode">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Unit</label>
+                                <input type="text" id="productFormUnit" value="CBM">
+                            </div>
+                            <div class="form-field">
+                                <label>Rate *</label>
+                                <input type="number" id="productFormRate" step="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btnSaveProductForm" class="btn btn-success">Save Product</button>
+                        <button id="btnCancelProductForm" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Change Password</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Current Password</label>
+                                <input type="password" id="cpCurrentPassword">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>New Password</label>
+                                <input type="password" id="cpNewPassword">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Confirm New Password</label>
+                                <input type="password" id="cpConfirmPassword">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btnSubmitChangePassword" class="btn btn-primary">Update Password</button>
+                        <button id="btnCancelChangePassword" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Local DB to MySQL Modal -->
+        <div id="migrateLocalModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Local DB to MySQL</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p style="color: #555; margin-bottom: 1rem;">
+                        This will enqueue all local companies, customers, products, invoices and RCC records and sync them to server.
+                    </p>
+                    <div class="form-actions">
+                        <button id="btnDownloadMigrateQuery" class="btn btn-secondary">Download SQL File</button>
+                        <button id="btnCancelMigrateLocal" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoices Modal -->
+        <div id="invoicesModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>All Invoices</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="invoiceDateFilterRow" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+                        <span style="font-weight: 600; align-self: center;">Filter by date:</span>
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label for="invoiceFilterDateFrom">From</label>
+                            <input type="text" id="invoiceFilterDateFrom" placeholder="DD-MM-YYYY" style="background: #fff;">
+                        </div>
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label for="invoiceFilterDateTo">To</label>
+                            <input type="text" id="invoiceFilterDateTo" placeholder="DD-MM-YYYY" style="background: #fff;">
+                        </div>
+                        <button type="button" id="btnInvoiceFilterClear" class="btn btn-secondary btn-small">Clear dates</button>
+                    </div>
+                    <div id="invoicesSummary" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #f5f5f5; border-radius: 6px; display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;">
+                        <span><strong>Total Amount (excl. GST):</strong> <span id="invoicesTotalExclGst">0.00</span></span>
+                        <span><strong>Total Amount (incl. GST):</strong> <span id="invoicesTotalInclGst">0.00</span></span>
+                        <button type="button" id="btnDownloadAllInvoicesPDF" class="btn btn-primary">Download all as single PDF</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice No.</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Total Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoicesTableBody">
+                            <!-- Invoices will be loaded here -->
+                        </tbody>
+                    </table>
+                    <!-- Pagination -->
+                    <div id="invoicesPagination" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #666;">
+                            <span id="invoicesPaginationInfo">Showing 0 - 0 of 0 records</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button id="btnInvoicesPrev" class="btn btn-secondary btn-small" disabled>Previous</button>
+                            <span id="invoicesPageNumbers" style="display: flex; gap: 0.3rem;"></span>
+                            <button id="btnInvoicesNext" class="btn btn-secondary btn-small" disabled>Next</button>
+                        </div>
+                        <div>
+                            <label style="margin-right: 0.5rem;">Records per page:</label>
+                            <select id="invoicesPerPage" style="padding: 0.4rem; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sheet Form Modal -->
+        <div id="sheetFormModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="sheetFormTitle">Add RCC Record</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Invoice No *</label>
+                                <input type="text" id="sheetFormInvoiceNo" required>
+                            </div>
+                            <div class="form-field">
+                                <label>Date *</label>
+                                <input type="date" id="sheetFormDate" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Product *</label>
+                                <select id="sheetFormProduct" required>
+                                    <option value="">-- Select Product --</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Weight</label>
+                                <input type="number" id="sheetFormWeight" step="1" value="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Truck Number</label>
+                                <input type="text" id="sheetFormTruckNumber">
+                            </div>
+                            <div class="form-field">
+                                <label>Ralti *</label>
+                                <select id="sheetFormRalti" required>
+                                    <option value="Yes">Yes</option>
+                                    <option value="No" selected>No</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Rate</label>
+                                <input type="number" id="sheetFormRate" step="1" value="0">
+                            </div>
+                            <div class="form-field">
+                                <label>GST (%)</label>
+                                <input type="number" id="sheetFormGst" step="1" value="5">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Amount</label>
+                                <input type="number" id="sheetFormAmount" step="1" value="0" readonly>
+                            </div>
+                            <div class="form-field">
+                                <label>Amount with GST</label>
+                                <input type="number" id="sheetFormAmountWithGst" step="1" value="0" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btnSaveSheetForm" class="btn btn-success">Save RCC Record</button>
+                        <button id="btnCancelSheetForm" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Print Invoice Section (Hidden) -->
+    <div id="printSection" class="print-section" style="display: none;">
+        <!-- Invoice will be rendered here for printing -->
+    </div>
+
+    <div id="apiLoaderOverlay" class="api-loader-overlay" aria-hidden="true">
+        <div class="api-loader-spinner" role="status" aria-label="Loading"></div>
+    </div>
+
+    <script src="api-loader-install.js"></script>
+    <script src="renderer.js"></script>
+</body>
+</html>
+
