@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Payments - Software Billing System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <header class="header">
+        <h1>Client Payments</h1>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+            <span id="clientPaymentsCompanyLabel" style="font-size: 0.95rem; color: white;"></span>
+            <button id="btnBack" class="btn btn-secondary">Back to RCC Records</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="form-actions" style="margin-bottom: 1rem;">
+            <button id="btnDownloadPaymentsPDF" class="btn btn-success">Download PDF</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div style="background: #f8f9fa; border-radius: 6px; padding: 1rem; border: 1px solid #e1e5ea;">
+                <div style="font-size: 0.85rem; color: #666;">Total RCC Amount</div>
+                <div id="summaryTotalBaseAmount" style="font-size: 1.4rem; font-weight: 700; margin-top: 0.35rem;">0.00</div>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 6px; padding: 1rem; border: 1px solid #e1e5ea;">
+                <div style="font-size: 0.85rem; color: #666;">Total RCC Amount With GST</div>
+                <div id="summaryTotalRccAmount" style="font-size: 1.4rem; font-weight: 700; margin-top: 0.35rem;">0.00</div>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 6px; padding: 1rem; border: 1px solid #e1e5ea;">
+                <div style="font-size: 0.85rem; color: #666;">Total Payment Received</div>
+                <div id="summaryTotalReceived" style="font-size: 1.4rem; font-weight: 700; margin-top: 0.35rem;">0.00</div>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 6px; padding: 1rem; border: 1px solid #e1e5ea;">
+                <div style="font-size: 0.85rem; color: #666;">Remaining Amount</div>
+                <div id="summaryRemainingAmount" style="font-size: 1.4rem; font-weight: 700; margin-top: 0.35rem;">0.00</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid #e1e5ea;">
+            <h2 style="margin: 0 0 1rem 0; font-size: 1.1rem;">Add Client Payment</h2>
+            <input type="hidden" id="paymentFormId">
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Firm Name</label>
+                    <input type="text" id="paymentFirmName" placeholder="Enter firm name" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-field">
+                    <label>Bank Name</label>
+                    <input type="text" id="paymentBankName" placeholder="Enter bank name" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-field">
+                    <label>Account Number</label>
+                    <input type="text" id="paymentAccountNumber" placeholder="Enter account number" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-field">
+                    <label>IFSC Code</label>
+                    <input type="text" id="paymentIfscCode" placeholder="Enter IFSC code" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-field">
+                    <label>Amount</label>
+                    <input type="number" id="paymentAmount" min="0" step="0.01" placeholder="Enter amount" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-field">
+                    <label>Date</label>
+                    <input type="text" id="paymentDate" placeholder="DD-MM-YYYY" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 5px; background: #fff;">
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+                <button id="btnSavePayment" class="btn btn-primary">Save Payment</button>
+                <button id="btnCancelPayment" class="btn btn-secondary" type="button">Cancel</button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Firm Name</th>
+                    <th>Bank Details</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="clientPaymentsTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="apiLoaderOverlay" class="api-loader-overlay" aria-hidden="true">
+        <div class="api-loader-spinner" role="status" aria-label="Loading"></div>
+    </div>
+
+    <script src="api-loader-install.js"></script>
+    <script src="client-payments.js"></script>
+</body>
+</html>

@@ -171,6 +171,7 @@ function calculateProductSummary() {
         const productName = sheet.product_name || 'Unknown Product';
         const rate = parseFloat(sheet.rate || 0);
         const bRate = Math.round((parseFloat(sheet.b_rate || 0) || 0) * 100) / 100;
+        const weight = parseFloat(sheet.weight || 0);
         // Create unique key combining product name and rate
         const key = `${productName}_${rate}_${bRate}`;
         
@@ -181,13 +182,15 @@ function calculateProductSummary() {
                 b_rate: bRate,
                 total_records: 0,
                 total_weight: 0,
+                total_b_amount: 0,
                 total_amount: 0,
                 total_amount_with_gst: 0
             };
         }
         
         summaryMap[key].total_records += 1;
-        summaryMap[key].total_weight += parseFloat(sheet.weight || 0);
+        summaryMap[key].total_weight += weight;
+        summaryMap[key].total_b_amount += bRate * weight;
         summaryMap[key].total_amount += parseFloat(sheet.amount || 0);
         summaryMap[key].total_amount_with_gst += parseFloat(sheet.amount_with_gst || 0);
     });
@@ -214,7 +217,7 @@ function displayProductSummary() {
     if (productSummary.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
+            <td colspan="9" style="text-align: center; padding: 2rem; color: #666;">
                 No product data available
             </td>
         `;
@@ -232,6 +235,7 @@ function displayProductSummary() {
             <td>${summary.total_weight.toFixed(2)}</td>
             <td>${summary.rate.toFixed(2)}</td>
             <td>${parseFloat(summary.b_rate || 0).toFixed(2)}</td>
+            <td>${summary.total_b_amount.toFixed(2)}</td>
             <td>${summary.total_amount.toFixed(2)}</td>
             <td>${gstAmount.toFixed(2)}</td>
             <td>${summary.total_amount_with_gst.toFixed(2)}</td>
@@ -244,6 +248,7 @@ function displayProductSummary() {
     totalRow.style.fontWeight = 'bold';
     totalRow.style.backgroundColor = '#f8f9fa';
     const totalWeight = productSummary.reduce((sum, p) => sum + p.total_weight, 0);
+    const totalBAmount = productSummary.reduce((sum, p) => sum + p.total_b_amount, 0);
     const totalAmount = productSummary.reduce((sum, p) => sum + p.total_amount, 0);
     const totalAmountWithGst = productSummary.reduce((sum, p) => sum + p.total_amount_with_gst, 0);
     const totalGst = totalAmountWithGst - totalAmount;
@@ -253,6 +258,7 @@ function displayProductSummary() {
         <td>${totalWeight.toFixed(2)}</td>
         <td></td>
         <td></td>
+        <td>${totalBAmount.toFixed(2)}</td>
         <td>${totalAmount.toFixed(2)}</td>
         <td>${totalGst.toFixed(2)}</td>
         <td>${totalAmountWithGst.toFixed(2)}</td>
@@ -384,9 +390,10 @@ async function downloadProductSummaryPDF() {
 function generateProductSummaryHTML(company, summaryData, options = {}) {
     try {
         const includeBRate = options.includeBRate !== false;
-        const totalCols = includeBRate ? 8 : 7;
+        const totalCols = includeBRate ? 9 : 7;
         const formattedDate = formatDateDDMMYY(new Date());
         const totalWeight = summaryData.reduce((sum, p) => sum + p.total_weight, 0);
+        const totalBAmount = summaryData.reduce((sum, p) => sum + p.total_b_amount, 0);
         const totalAmount = summaryData.reduce((sum, p) => sum + p.total_amount, 0);
         const totalAmountWithGst = summaryData.reduce((sum, p) => sum + p.total_amount_with_gst, 0);
         const totalGst = totalAmountWithGst - totalAmount;
@@ -456,6 +463,7 @@ function generateProductSummaryHTML(company, summaryData, options = {}) {
         <td>QTY</td>
         <td>RS</td>
         ${includeBRate ? '<td>B Rate</td>' : ''}
+        ${includeBRate ? '<td>B Amount</td>' : ''}
         <td>AMT</td>
         <td>GST</td>
         <td>AMT WITH GST</td>
@@ -471,6 +479,7 @@ function generateProductSummaryHTML(company, summaryData, options = {}) {
         <td class="right">${summary.total_weight.toFixed(2)}</td>
         <td class="right">${summary.rate.toFixed(2)}</td>
         ${includeBRate ? `<td class="right">${parseFloat(summary.b_rate || 0).toFixed(2)}</td>` : ''}
+        ${includeBRate ? `<td class="right">${summary.total_b_amount.toFixed(2)}</td>` : ''}
         <td class="right">${summary.total_amount.toFixed(2)}</td>
         <td class="right">${gstAmount.toFixed(2)}</td>
         <td class="right">${summary.total_amount_with_gst.toFixed(2)}</td>
@@ -484,6 +493,7 @@ function generateProductSummaryHTML(company, summaryData, options = {}) {
         <td class="right">${totalWeight.toFixed(2)}</td>
         <td class="right"></td>
         ${includeBRate ? '<td class="right"></td>' : ''}
+        ${includeBRate ? `<td class="right">${totalBAmount.toFixed(2)}</td>` : ''}
         <td class="right">${totalAmount.toFixed(2)}</td>
         <td class="right">${totalGst.toFixed(2)}</td>
         <td class="right">${totalAmountWithGst.toFixed(2)}</td>

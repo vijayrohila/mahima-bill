@@ -394,6 +394,9 @@ function setupEventListeners() {
     document.getElementById('btnSheets').addEventListener('click', () => {
         window.location.href = 'sheets.html';
     });
+    document.getElementById('btnClientPaymentsMenu').addEventListener('click', () => {
+        window.location.href = 'client-payments.html';
+    });
     document.getElementById('btnChangePasswordScreen').addEventListener('click', () => openModal('changePasswordModal'));
     document.getElementById('btnMigrateLocalScreen').addEventListener('click', () => openModal('migrateLocalModal'));
     document.getElementById('btnUserLogout').addEventListener('click', logoutToLoginPage);

@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSheet: (id) => ipcRenderer.invoke('get-sheet', id),
   getSheetByInvoiceNo: (invoiceNo, excludeId, companyId) => ipcRenderer.invoke('get-sheet-by-invoice-no', invoiceNo, excludeId, companyId),
   saveSheet: (sheet) => ipcRenderer.invoke('save-sheet', sheet),
+  getSheetPayments: (companyId, options) => ipcRenderer.invoke('get-sheet-payments', companyId, options),
+  saveSheetPayment: (payment) => ipcRenderer.invoke('save-sheet-payment', payment),
+  deleteSheetPayment: (id) => ipcRenderer.invoke('delete-sheet-payment', id),
 
   // Database Location
   getDatabasePath: () => ipcRenderer.invoke('get-database-path'),

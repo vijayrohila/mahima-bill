@@ -630,8 +630,15 @@ body {
 }
 
 /* RCC records: column alignment + in-row edit */
+.rcc-records-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .data-table.rcc-records-table {
     table-layout: fixed;
+    min-width: 1280px;
 }
 
 .data-table.rcc-records-table th:nth-child(1),
@@ -641,12 +648,12 @@ body {
 
 .data-table.rcc-records-table th:nth-child(2),
 .data-table.rcc-records-table td:nth-child(2) {
-    width: 9%;
+    width: 8%;
 }
 
 .data-table.rcc-records-table th:nth-child(3),
 .data-table.rcc-records-table td:nth-child(3) {
-    width: 14%;
+    width: 13%;
 }
 
 .data-table.rcc-records-table th:nth-child(4),
@@ -656,12 +663,12 @@ body {
 
 .data-table.rcc-records-table th:nth-child(5),
 .data-table.rcc-records-table td:nth-child(5) {
-    width: 10%;
+    width: 9%;
 }
 
 .data-table.rcc-records-table th:nth-child(6),
 .data-table.rcc-records-table td:nth-child(6) {
-    width: 6%;
+    width: 5%;
 }
 
 .data-table.rcc-records-table th:nth-child(7),
@@ -671,7 +678,7 @@ body {
 
 .data-table.rcc-records-table th:nth-child(8),
 .data-table.rcc-records-table td:nth-child(8) {
-    width: 8%;
+    width: 7%;
 }
 
 .data-table.rcc-records-table th:nth-child(9),
@@ -681,22 +688,27 @@ body {
 
 .data-table.rcc-records-table th:nth-child(10),
 .data-table.rcc-records-table td:nth-child(10) {
-    width: 10%;
+    width: 5%;
 }
 
 .data-table.rcc-records-table th:nth-child(11),
 .data-table.rcc-records-table td:nth-child(11) {
-    width: 9%;
+    width: 8%;
 }
 
 .data-table.rcc-records-table th:nth-child(12),
 .data-table.rcc-records-table td:nth-child(12) {
-    width: 12%;
+    width: 10%;
 }
 
 .data-table.rcc-records-table th:nth-child(13),
 .data-table.rcc-records-table td:nth-child(13) {
-    width: 12%;
+    width: 6%;
+}
+
+.data-table.rcc-records-table th:nth-child(14),
+.data-table.rcc-records-table td:nth-child(14) {
+    width: 4%;
 }
 
 .data-table tbody tr.rcc-row-editing {
@@ -899,19 +911,95 @@ body {
         margin: 10% auto;
     }
 
-    /* RCC list: keep columns readable via horizontal scroll on mobile */
+    /* RCC list: stack rows as cards on small screens */
+    .rcc-records-table-wrap {
+        overflow-x: visible;
+    }
+
     .data-table.rcc-records-table {
         display: block;
         width: 100%;
-        min-width: 1100px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        white-space: nowrap;
+        min-width: 0;
+        table-layout: auto;
+        background: transparent;
     }
 
-    .data-table.rcc-records-table th,
+    .data-table.rcc-records-table thead {
+        display: none;
+    }
+
+    .data-table.rcc-records-table tbody,
+    .data-table.rcc-records-table tr,
     .data-table.rcc-records-table td {
-        white-space: nowrap;
+        display: block;
+        width: 100% !important;
+    }
+
+    .data-table.rcc-records-table tbody tr {
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .data-table.rcc-records-table tbody tr:hover {
+        background: #fff;
+    }
+
+    .data-table.rcc-records-table tbody tr.rcc-row-editing,
+    .data-table.rcc-records-table tbody tr.rcc-row-editing:hover {
+        background: #e8f4fc;
+    }
+
+    .data-table.rcc-records-table td {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.65rem 0.8rem;
+        text-align: right;
+        border-bottom: 1px solid #eee;
+        white-space: normal;
+    }
+
+    .data-table.rcc-records-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .data-table.rcc-records-table td::before {
+        flex: 0 0 42%;
+        color: #555;
+        content: "";
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .data-table.rcc-records-table td:nth-child(1)::before { content: "S.No"; }
+    .data-table.rcc-records-table td:nth-child(2)::before { content: "Invoice No"; }
+    .data-table.rcc-records-table td:nth-child(3)::before { content: "Product"; }
+    .data-table.rcc-records-table td:nth-child(4)::before { content: "Weight"; }
+    .data-table.rcc-records-table td:nth-child(5)::before { content: "Truck Number"; }
+    .data-table.rcc-records-table td:nth-child(6)::before { content: "Ralti"; }
+    .data-table.rcc-records-table td:nth-child(7)::before { content: "Rate"; }
+    .data-table.rcc-records-table td:nth-child(8)::before { content: "B Rate"; }
+    .data-table.rcc-records-table td:nth-child(9)::before { content: "B Amount"; }
+    .data-table.rcc-records-table td:nth-child(10)::before { content: "GST"; }
+    .data-table.rcc-records-table td:nth-child(11)::before { content: "Amount"; }
+    .data-table.rcc-records-table td:nth-child(12)::before { content: "Amount with GST"; }
+    .data-table.rcc-records-table td:nth-child(13)::before { content: "Date"; }
+    .data-table.rcc-records-table td:nth-child(14)::before { content: "Actions"; }
+
+    .data-table.rcc-records-table .rcc-inline-input,
+    .data-table.rcc-records-table .rcc-inline-select {
+        max-width: 58%;
+        text-align: right;
+    }
+
+    .data-table.rcc-records-table .rcc-inline-actions {
+        flex: 1;
+        flex-direction: row;
+        justify-content: flex-end;
     }
 
     #sheetsPagination {

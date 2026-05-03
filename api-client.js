@@ -285,6 +285,34 @@ async function saveSheet(config, sheet) {
   return request(config, 'POST', '/sheets', sheet);
 }
 
+async function getSheetPayments(config, companyId, options = {}) {
+  if (!companyId) {
+    return { data: [], meta: { total: 0, current_page: 1, per_page: 25, last_page: 0 } };
+  }
+  const q = new URLSearchParams({ company_id: String(companyId) });
+  if (options.fetch_all) {
+    q.set('fetch_all', '1');
+  } else {
+    q.set('page', String(options.page || 1));
+    q.set('per_page', String(options.per_page || 25));
+  }
+  if (options.search) q.set('search', options.search);
+  if (options.date_from) q.set('date_from', options.date_from);
+  if (options.date_to) q.set('date_to', options.date_to);
+  return request(config, 'GET', `/sheet-payments?${q.toString()}`);
+}
+
+async function saveSheetPayment(config, payment) {
+  if (payment.id) {
+    return request(config, 'PUT', `/sheet-payments/${payment.id}`, payment);
+  }
+  return request(config, 'POST', '/sheet-payments', payment);
+}
+
+async function deleteSheetPayment(config, id) {
+  return request(config, 'DELETE', `/sheet-payments/${id}`);
+}
+
 async function getSyncChanges(config, companyId, since) {
   const q = new URLSearchParams();
   if (companyId != null) q.set('company_id', String(companyId));
@@ -321,5 +349,8 @@ module.exports = {
   getSheet,
   getSheetByInvoiceNo,
   saveSheet,
+  getSheetPayments,
+  saveSheetPayment,
+  deleteSheetPayment,
   getSyncChanges,
 };

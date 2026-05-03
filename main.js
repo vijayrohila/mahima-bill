@@ -349,6 +349,21 @@ ipcMain.handle('save-sheet', async (event, sheet) => {
   return db.saveSheet(sheet);
 });
 
+ipcMain.handle('get-sheet-payments', async (event, companyId, options) => {
+  if (useApi()) return apiClient.getSheetPayments(config, companyId, options || {});
+  throw new Error('RCC payments are available only in API mode.');
+});
+
+ipcMain.handle('save-sheet-payment', async (event, payment) => {
+  if (useApi()) return apiClient.saveSheetPayment(config, payment);
+  throw new Error('RCC payments are available only in API mode.');
+});
+
+ipcMain.handle('delete-sheet-payment', async (event, id) => {
+  if (useApi()) return apiClient.deleteSheetPayment(config, id);
+  throw new Error('RCC payments are available only in API mode.');
+});
+
 ipcMain.handle('api-login', async (event, email, password) => {
   return apiClient.apiLogin(config, email, password);
 });
@@ -688,6 +703,9 @@ ipcMain.handle('download-pdf', async (event, printHTML) => {
       const dateMatch = printHTML.match(/Date:\s*(\d+\/\d+\/\d+)/);
       const dateStr = dateMatch ? dateMatch[1].replace(/\//g, '-') : new Date().toISOString().slice(0, 10);
       pdfFileName = `RCC-Records-${dateStr}.pdf`;
+    } else if (printHTML.includes('CLIENT PAYMENTS REPORT')) {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      pdfFileName = `Client-Payments-${dateStr}.pdf`;
     } else if (printHTML.includes('ALL_INVOICES_PDF')) {
       // All invoices in single PDF
       const dateStr = new Date().toISOString().slice(0, 10);

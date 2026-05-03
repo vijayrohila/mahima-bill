@@ -30,6 +30,7 @@
             <button id="btnAddNewSheet" class="btn btn-primary">+ Add RCC Record</button>
             <button id="btnDownloadSheetsPDF" class="btn btn-success">Download PDF</button>
             <button id="btnProductSummary" class="btn btn-info">Product Summary</button>
+            <button id="btnClientPayments" class="btn btn-secondary">Client Payments</button>
         </div>
 
         <!-- Inline RCC Record Form (Accordion style) -->
@@ -56,6 +57,7 @@
                                                     <th style="padding: 0.35rem; font-size: 0.8rem;">Ralti</th>
                                                     <th style="padding: 0.35rem; font-size: 0.8rem;">Rate</th>
                                                     <th style="padding: 0.35rem; font-size: 0.8rem;">B Rate</th>
+                                                    <th style="padding: 0.35rem; font-size: 0.8rem;">B Amount</th>
                                                     <th style="padding: 0.35rem; font-size: 0.8rem;">GST %</th>
                                                     <th style="padding: 0.35rem; font-size: 0.8rem;">Amount</th>
                                                     <th style="padding: 0.35rem; font-size: 0.8rem;">Amt w/ GST</th>
@@ -88,6 +90,9 @@
                                                     </td>
                                                     <td style="padding: 0.35rem;">
                                                         <input type="number" id="sheetFormBRate" data-sheet-field="b_rate" step="0.01" value="0" class="rcc-add-input" />
+                                                    </td>
+                                                    <td style="padding: 0.35rem;">
+                                                        <input type="number" id="sheetFormBAmount" data-sheet-field="b_amount" step="0.01" value="0" readonly class="rcc-add-input" />
                                                     </td>
                                                     <td style="padding: 0.35rem;">
                                                         <input type="number" id="sheetFormGst" data-sheet-field="gst" step="1" value="5" class="rcc-add-input" />
@@ -183,28 +188,31 @@
                 </div>
             </div>
         </div>
-        <table class="data-table rcc-records-table">
-            <thead>
-                <tr>
-                    <th>S.No</th>
-                    <th>Invoice No</th>
-                    <th>Product</th>
-                    <th>Weight</th>
-                    <th>Truck Number</th>
-                    <th>Ralti</th>
-                    <th>Rate</th>
-                    <th>B Rate</th>
-                    <th>GST</th>
-                    <th>Amount</th>
-                    <th>Amount with GST</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="sheetsTableBody">
-                <!-- Sheets will be loaded here -->
-            </tbody>
-        </table>
+        <div class="rcc-records-table-wrap">
+            <table class="data-table rcc-records-table">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Invoice No</th>
+                        <th>Product</th>
+                        <th>Weight</th>
+                        <th>Truck Number</th>
+                        <th>Ralti</th>
+                        <th>Rate</th>
+                        <th>B Rate</th>
+                        <th>B Amount</th>
+                        <th>GST</th>
+                        <th>Amount</th>
+                        <th>Amount with GST</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="sheetsTableBody">
+                    <!-- Sheets will be loaded here -->
+                </tbody>
+            </table>
+        </div>
         <!-- Pagination -->
         <div id="sheetsPagination" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
             <div style="color: #666;">

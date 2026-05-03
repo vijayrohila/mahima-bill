@@ -33,16 +33,22 @@ function destroyInlineEditFlatpickr() {
 function wireRootFormCalculations(root) {
     const rateField = sheetFormEl(root, 'rate');
     const weightField = sheetFormEl(root, 'weight');
+    const bRateField = sheetFormEl(root, 'b_rate');
     const gstField = sheetFormEl(root, 'gst');
     if (!rateField || !weightField || !gstField) return;
     const newRateField = rateField.cloneNode(true);
     const newWeightField = weightField.cloneNode(true);
+    const newBRateField = bRateField ? bRateField.cloneNode(true) : null;
     const newGstField = gstField.cloneNode(true);
     rateField.parentNode.replaceChild(newRateField, rateField);
     weightField.parentNode.replaceChild(newWeightField, weightField);
+    if (bRateField && newBRateField) bRateField.parentNode.replaceChild(newBRateField, bRateField);
     gstField.parentNode.replaceChild(newGstField, gstField);
     sheetFormEl(root, 'rate').addEventListener('input', () => calculateSheetAmounts(root));
     sheetFormEl(root, 'weight').addEventListener('input', () => calculateSheetAmounts(root));
+    if (sheetFormEl(root, 'b_rate')) {
+        sheetFormEl(root, 'b_rate').addEventListener('input', () => calculateSheetAmounts(root));
+    }
     sheetFormEl(root, 'gst').addEventListener('input', () => calculateSheetAmounts(root));
 }
 
@@ -170,6 +176,18 @@ function renderInlineEditRow(sheet, serialNumber) {
     bRate.value = sheet.b_rate != null ? String(sheet.b_rate) : '0';
     tdBRate.appendChild(bRate);
     tr.appendChild(tdBRate);
+
+    const tdBAmount = document.createElement('td');
+    const bAmount = document.createElement('input');
+    bAmount.type = 'number';
+    bAmount.className = 'rcc-inline-input';
+    bAmount.id = `rccInlineBAmount_${sheet.id}`;
+    bAmount.setAttribute('data-sheet-field', 'b_amount');
+    bAmount.step = '0.01';
+    bAmount.readOnly = true;
+    bAmount.value = calculateBAmount(sheet.weight, sheet.b_rate).toFixed(2);
+    tdBAmount.appendChild(bAmount);
+    tr.appendChild(tdBAmount);
 
     const tdGst = document.createElement('td');
     const gst = document.createElement('input');
@@ -306,6 +324,10 @@ function normalizeSheetsResponse(res) {
         data: Array.isArray(res?.data) ? res.data : [],
         meta: res?.meta || { total: 0, current_page: 1, per_page: 25, last_page: 0 },
     };
+}
+
+function calculateBAmount(weight, bRate) {
+    return (parseFloat(weight) || 0) * (parseFloat(bRate) || 0);
 }
 
 function buildSheetsListOptions(overrides = {}) {
@@ -491,6 +513,9 @@ function setupEventListeners() {
     document.getElementById('btnProductSummary').addEventListener('click', () => {
         window.location.href = 'product-summary.html';
     });
+    document.getElementById('btnClientPayments').addEventListener('click', () => {
+        window.location.href = 'client-payments.html';
+    });
 
     // Sheets
     document.getElementById('btnAddNewSheet').addEventListener('click', () => {
@@ -655,6 +680,7 @@ function displaySheets() {
 
         const row = document.createElement('tr');
         const formattedDate = formatDateDDMMYY(sheet.date);
+        const bAmount = calculateBAmount(sheet.weight, sheet.b_rate);
         row.innerHTML = `
             <td>${serialNumber}</td>
             <td>${sheet.invoice_no || ''}</td>
@@ -664,6 +690,7 @@ function displaySheets() {
             <td>${sheet.ralti || 'No'}</td>
             <td>${parseFloat(sheet.rate || 0).toFixed(2)}</td>
             <td>${parseFloat(sheet.b_rate || 0).toFixed(2)}</td>
+            <td>${bAmount.toFixed(2)}</td>
             <td>${parseFloat(sheet.gst || 5).toFixed(2)}%</td>
             <td>${parseFloat(sheet.amount || 0).toFixed(2)}</td>
             <td>${parseFloat(sheet.amount_with_gst || 0).toFixed(2)}</td>
@@ -762,6 +789,8 @@ function calculateSheetAmounts(root) {
     if (!root) return;
     const rateEl = sheetFormEl(root, 'rate');
     const weightEl = sheetFormEl(root, 'weight');
+    const bRateEl = sheetFormEl(root, 'b_rate');
+    const bAmountEl = sheetFormEl(root, 'b_amount');
     const gstEl = sheetFormEl(root, 'gst');
     const amtEl = sheetFormEl(root, 'amount');
     const amtGstEl = sheetFormEl(root, 'amount_with_gst');
@@ -769,11 +798,14 @@ function calculateSheetAmounts(root) {
 
     const rate = parseFloat(rateEl.value) || 0;
     const weight = parseFloat(weightEl.value) || 0;
+    const bRate = bRateEl ? parseFloat(bRateEl.value) || 0 : 0;
     const gst = parseFloat(gstEl.value) || 0;
 
     const amount = rate * weight;
+    const bAmount = calculateBAmount(weight, bRate);
     const amountWithGst = amount + (amount * gst / 100);
 
+    if (bAmountEl) bAmountEl.value = bAmount.toFixed(2);
     amtEl.value = amount.toFixed(2);
     amtGstEl.value = amountWithGst.toFixed(2);
 }
@@ -827,6 +859,7 @@ function openSheetForm() {
     sheetFormEl(root, 'ralti').value = 'No';
     sheetFormEl(root, 'rate').value = '0';
     sheetFormEl(root, 'b_rate').value = '0';
+    if (sheetFormEl(root, 'b_amount')) sheetFormEl(root, 'b_amount').value = '0';
     sheetFormEl(root, 'gst').value = '5';
     sheetFormEl(root, 'amount').value = '0';
     sheetFormEl(root, 'amount_with_gst').value = '0';
@@ -1047,17 +1080,19 @@ async function downloadSheetsPDF() {
 function generateSheetsHTML(company, sheets, options = {}) {
     try {
         const includeBRate = options.includeBRate !== false;
-        const totalCols = includeBRate ? 12 : 11;
-        const gstLabelColSpan = includeBRate ? 7 : 6;
+        const totalCols = includeBRate ? 13 : 11;
+        const gstLabelColSpan = totalCols - 5;
 
         const formattedDate = formatDateDDMMYY(new Date());
 
         // Calculate totals
         let totalWeight = 0;
+        let totalBAmount = 0;
         let totalAmount = 0;
         let totalAmountWithGst = 0;
         sheets.forEach(sheet => {
             totalWeight += parseFloat(sheet.weight || 0);
+            totalBAmount += calculateBAmount(sheet.weight, sheet.b_rate);
             totalAmount += parseFloat(sheet.amount || 0);
             totalAmountWithGst += parseFloat(sheet.amount_with_gst || 0);
         });
@@ -1144,6 +1179,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
         <td>Ralti</td>
         <td>Rate</td>
         ${includeBRate ? '<td>B Rate</td>' : ''}
+        ${includeBRate ? '<td>B Amount</td>' : ''}
         <td>GST</td>
         <td>Amount</td>
         <td>Amount with GST</td>
@@ -1153,6 +1189,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
       <!-- RECORDS -->
       ${sheets.map((sheet, index) => {
         const formattedDate = formatDateDDMMYY(sheet.date);
+        const bAmount = calculateBAmount(sheet.weight, sheet.b_rate);
         return `
       <tr class="center">
         <td>${index + 1}</td>
@@ -1163,6 +1200,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
         <td>${sheet.ralti || 'No'}</td>
         <td class="right">${parseFloat(sheet.rate || 0).toFixed(2)}</td>
         ${includeBRate ? `<td class="right">${parseFloat(sheet.b_rate || 0).toFixed(2)}</td>` : ''}
+        ${includeBRate ? `<td class="right">${bAmount.toFixed(2)}</td>` : ''}
         <td>${parseFloat(sheet.gst || 5).toFixed(2)}%</td>
         <td class="right">${parseFloat(sheet.amount || 0).toFixed(2)}</td>
         <td class="right">${parseFloat(sheet.amount_with_gst || 0).toFixed(2)}</td>
@@ -1178,6 +1216,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
         <td colspan="2" class="right">TOTAL:</td> 
         <td class="right"></td>
         ${includeBRate ? '<td class="right"></td>' : ''}
+        ${includeBRate ? `<td class="right">${totalBAmount.toFixed(2)}</td>` : ''}
         <td></td>
         <td class="right">${totalAmount.toFixed(2)}</td>
         <td class="right">${totalAmountWithGst.toFixed(2)}</td>
@@ -1188,6 +1227,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
       <tr>
         <td colspan="${totalCols}" style="height:60px;">
             <strong>Total Weight:</strong> ${totalWeight.toFixed(2)}<br>
+            ${includeBRate ? `<strong>Total B Amount:</strong> ${totalBAmount.toFixed(2)}<br>` : ''}
             <strong>Total Amount:</strong> ${totalAmount.toFixed(2)}<br>
             <strong>Total Amount with GST:</strong> ${totalAmountWithGst.toFixed(2)}
         </td>
