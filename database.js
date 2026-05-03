@@ -323,6 +323,33 @@ class BillingDatabase {
       CREATE INDEX IF NOT EXISTS idx_sheets_date ON sheets(date);
       CREATE INDEX IF NOT EXISTS idx_sheets_company ON sheets(company_id);
     `);
+
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS customer_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        customer_id INTEGER NOT NULL,
+        payment_date TEXT NOT NULL,
+        amount REAL NOT NULL DEFAULT 0,
+        payee_name TEXT,
+        account_number TEXT,
+        ifsc_code TEXT,
+        bank_name TEXT,
+        site TEXT,
+        rtgs TEXT,
+        utr_no TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (company_id) REFERENCES company_settings(id),
+        FOREIGN KEY (customer_id) REFERENCES customers(id)
+      )
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_customer_payments_company ON customer_payments(company_id);
+      CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON customer_payments(customer_id);
+      CREATE INDEX IF NOT EXISTS idx_customer_payments_date ON customer_payments(payment_date);
+    `);
+
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS sync_queue (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -685,6 +712,11 @@ class BillingDatabase {
     if (opts.date_to) {
       conditions.push('date(i.invoice_date) <= date(?)');
       params.push(opts.date_to);
+    }
+    const customerId = parseInt(String(opts.customer_id || ''), 10);
+    if (Number.isFinite(customerId) && customerId > 0) {
+      conditions.push('i.customer_id = ?');
+      params.push(customerId);
     }
     const whereClause = conditions.join(' AND ');
 
@@ -1055,6 +1087,154 @@ class BillingDatabase {
 
   deleteSheet(id) {
     return this.db.prepare('DELETE FROM sheets WHERE id = ?').run(id);
+  }
+
+  /**
+   * Normalize payment date to YYYY-MM-DD for SQLite.
+   */
+  normalizeCustomerPaymentDate(value) {
+    if (value == null || value === '') return null;
+    const s = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (m) {
+      const d = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const y = parseInt(m[3], 10);
+      if (d && mo && y) {
+        return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+    }
+    return s.slice(0, 10);
+  }
+
+  getCustomerPayments(companyId, options = {}) {
+    if (!companyId) {
+      return {
+        data: [],
+        meta: { total: 0, current_page: 1, per_page: 25, last_page: 0 },
+      };
+    }
+    const opts = options || {};
+    const fetchAll = !!opts.fetch_all;
+    const page = Math.max(1, parseInt(String(opts.page), 10) || 1);
+    const perPage = Math.min(200, Math.max(1, parseInt(String(opts.per_page), 10) || 25));
+
+    const conditions = ['cp.company_id = ?'];
+    const params = [companyId];
+    if (opts.date_from) {
+      conditions.push('date(cp.payment_date) >= date(?)');
+      params.push(opts.date_from);
+    }
+    if (opts.date_to) {
+      conditions.push('date(cp.payment_date) <= date(?)');
+      params.push(opts.date_to);
+    }
+    const cid = parseInt(String(opts.customer_id || ''), 10);
+    if (Number.isFinite(cid) && cid > 0) {
+      conditions.push('cp.customer_id = ?');
+      params.push(cid);
+    }
+    const whereClause = conditions.join(' AND ');
+
+    const totalRow = this.db.prepare(`
+      SELECT COUNT(*) AS c FROM customer_payments cp WHERE ${whereClause}
+    `).get(...params);
+    const total = totalRow?.c != null ? Number(totalRow.c) : 0;
+
+    let limitClause = '';
+    if (!fetchAll) {
+      const offset = (page - 1) * perPage;
+      limitClause = ` LIMIT ${Number(perPage)} OFFSET ${Number(offset)}`;
+    }
+
+    const data = this.db.prepare(`
+      SELECT cp.*, c.name AS customer_name
+      FROM customer_payments cp
+      LEFT JOIN customers c ON cp.customer_id = c.id
+      WHERE ${whereClause}
+      ORDER BY cp.payment_date DESC, cp.id DESC
+      ${limitClause}
+    `).all(...params);
+
+    const perPageEffective = fetchAll ? Math.max(1, total || 1) : perPage;
+    const lastPage = total > 0 ? (fetchAll ? 1 : Math.ceil(total / perPage)) : 0;
+
+    return {
+      data,
+      meta: {
+        total,
+        current_page: fetchAll ? 1 : page,
+        per_page: perPageEffective,
+        last_page: lastPage,
+      },
+    };
+  }
+
+  getCustomerPayment(id) {
+    return this.db.prepare(`
+      SELECT cp.*, c.name AS customer_name
+      FROM customer_payments cp
+      LEFT JOIN customers c ON cp.customer_id = c.id
+      WHERE cp.id = ?
+    `).get(id);
+  }
+
+  saveCustomerPayment(payment) {
+    const companyId = payment.company_id != null ? parseInt(String(payment.company_id), 10) : null;
+    const customerId = payment.customer_id != null ? parseInt(String(payment.customer_id), 10) : null;
+    if (!companyId || !customerId) {
+      throw new Error('company_id and customer_id are required');
+    }
+    const cust = this.db.prepare('SELECT id FROM customers WHERE id = ? AND company_id = ?').get(customerId, companyId);
+    if (!cust) {
+      throw new Error('Customer does not belong to this company');
+    }
+    const paymentDate = this.normalizeCustomerPaymentDate(payment.payment_date);
+    if (!paymentDate) {
+      throw new Error('payment_date is required');
+    }
+    const amount = parseFloat(payment.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error('amount must be greater than zero');
+    }
+    const optStr = (v) => (v != null && String(v).trim() !== '' ? String(v).trim() : null);
+    const payeeName = optStr(payment.payee_name);
+    const accountNumber = optStr(payment.account_number);
+    const ifscCode = optStr(payment.ifsc_code);
+    const bankName = optStr(payment.bank_name);
+    const site = optStr(payment.site);
+    const rtgs = optStr(payment.rtgs);
+    const utrNo = optStr(payment.utr_no);
+
+    if (payment.id) {
+      this.db.prepare(`
+        UPDATE customer_payments SET
+          customer_id = ?, payment_date = ?, amount = ?, payee_name = ?,
+          account_number = ?, ifsc_code = ?, bank_name = ?, site = ?, rtgs = ?, utr_no = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND company_id = ?
+      `).run(
+        customerId, paymentDate, amount, payeeName,
+        accountNumber, ifscCode, bankName, site, rtgs, utrNo,
+        payment.id, companyId
+      );
+      return payment.id;
+    }
+    const result = this.db.prepare(`
+      INSERT INTO customer_payments (
+        company_id, customer_id, payment_date, amount, payee_name,
+        account_number, ifsc_code, bank_name, site, rtgs, utr_no
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      companyId, customerId, paymentDate, amount, payeeName,
+      accountNumber, ifscCode, bankName, site, rtgs, utrNo
+    );
+    return result.lastInsertRowid;
+  }
+
+  deleteCustomerPayment(id) {
+    return this.db.prepare('DELETE FROM customer_payments WHERE id = ?').run(id);
   }
 
   /**

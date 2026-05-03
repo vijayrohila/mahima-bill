@@ -128,6 +128,68 @@ function getInvoiceFilterDatesForApi() {
     return out;
 }
 
+function getInvoiceFiltersForApi() {
+    const out = getInvoiceFilterDatesForApi();
+    const customerEl = document.getElementById('invoiceFilterCustomer');
+    const selectedCustomerEl = document.getElementById('customerSelect');
+    const customerValue = customerEl && customerEl.value
+        ? customerEl.value
+        : (selectedCustomerEl && selectedCustomerEl.value ? selectedCustomerEl.value : '');
+    const customerId = customerValue ? parseInt(customerValue, 10) : 0;
+    if (customerId) {
+        out.customer_id = customerId;
+    }
+    return out;
+}
+
+function filterInvoicesByCustomer(rows, customerId) {
+    const id = parseInt(String(customerId || ''), 10);
+    if (!Number.isFinite(id) || id <= 0) return rows;
+    return rows.filter(invoice => parseInt(String(invoice.customer_id || ''), 10) === id);
+}
+
+function buildClientFilteredInvoicesResponse(rows, page, perPage) {
+    let totalValue = 0;
+    let totalAmount = 0;
+    rows.forEach(invoice => {
+        totalValue += parseFloat(invoice.total_value || 0);
+        totalAmount += parseFloat(invoice.total_amount || 0);
+    });
+
+    const total = rows.length;
+    const start = (page - 1) * perPage;
+    const data = rows.slice(start, start + perPage);
+    return {
+        data,
+        meta: {
+            total,
+            current_page: page,
+            per_page: perPage,
+            last_page: total > 0 ? Math.ceil(total / perPage) : 0,
+        },
+        sums: { total_value: totalValue, total_amount: totalAmount },
+    };
+}
+
+function compareInvoicesAscending(a, b) {
+    const invoiceA = displayInvoiceNumber(a.invoice_number);
+    const invoiceB = displayInvoiceNumber(b.invoice_number);
+    const numA = parseInt(invoiceA, 10);
+    const numB = parseInt(invoiceB, 10);
+
+    if (Number.isFinite(numA) && Number.isFinite(numB) && numA !== numB) {
+        return numA - numB;
+    }
+
+    const invoiceCompare = String(invoiceA).localeCompare(String(invoiceB), undefined, { numeric: true, sensitivity: 'base' });
+    if (invoiceCompare !== 0) return invoiceCompare;
+
+    const dateCompare = new Date(a.invoice_date || 0) - new Date(b.invoice_date || 0);
+    if (dateCompare !== 0) return dateCompare;
+
+    return (parseInt(a.id, 10) || 0) - (parseInt(b.id, 10) || 0);
+}
+
 async function fetchInvoicesList(resetPage = true) {
     if (!currentCompanyId) {
         allInvoices = [];
@@ -139,14 +201,21 @@ async function fetchInvoicesList(resetPage = true) {
     if (resetPage) {
         currentInvoicesPage = 1;
     }
-    const dateOpts = getInvoiceFilterDatesForApi();
-    const raw = await window.electronAPI.getInvoices(currentCompanyId, {
-        fetch_all: false,
-        page: currentInvoicesPage,
-        per_page: invoicesPerPage,
-        ...dateOpts,
-    });
-    const norm = normalizeInvoicesListResponse(raw);
+    const filterOpts = getInvoiceFiltersForApi();
+    const hasCustomerFilter = !!filterOpts.customer_id;
+    const raw = await window.electronAPI.getInvoices(currentCompanyId, hasCustomerFilter
+        ? { fetch_all: true, ...filterOpts }
+        : {
+            fetch_all: false,
+            page: currentInvoicesPage,
+            per_page: invoicesPerPage,
+            ...filterOpts,
+        });
+    let norm = normalizeInvoicesListResponse(raw);
+    if (hasCustomerFilter) {
+        const filteredRows = filterInvoicesByCustomer(norm.data, filterOpts.customer_id);
+        norm = buildClientFilteredInvoicesResponse(filteredRows, currentInvoicesPage, invoicesPerPage);
+    }
     const totalPages = norm.meta.total > 0 ? Math.ceil(norm.meta.total / invoicesPerPage) : 0;
     if (norm.meta.total > 0 && currentInvoicesPage > totalPages) {
         currentInvoicesPage = totalPages;
@@ -333,6 +402,7 @@ async function loadDataForCurrentCompany() {
         invoicesListTotal = 0;
         invoicesListSums = { total_value: 0, total_amount: 0 };
         populateCustomerSelect();
+        populateInvoiceCustomerFilter();
         document.getElementById('invoiceNumber').value = '';
         return;
     }
@@ -344,6 +414,7 @@ async function loadDataForCurrentCompany() {
         ]);
         customers = Array.isArray(custData) ? custData : [];
         products = Array.isArray(prodData) ? prodData : [];
+        populateInvoiceCustomerFilter();
         if (invoicesModalOpen) {
             await fetchInvoicesList(true);
         }
@@ -364,6 +435,7 @@ async function loadDataForCurrentCompany() {
         invoicesListTotal = 0;
         invoicesListSums = { total_value: 0, total_amount: 0 };
         populateCustomerSelect();
+        populateInvoiceCustomerFilter();
     }
 }
 
@@ -376,6 +448,8 @@ function setupEventListeners() {
         const val = this.value;
         currentCompanyId = val ? parseInt(val) : null;
         if (currentCompanyId) localStorage.setItem('currentCompanyId', String(currentCompanyId));
+        const invoiceCustomerFilter = document.getElementById('invoiceFilterCustomer');
+        if (invoiceCustomerFilter) invoiceCustomerFilter.value = '';
         if (typeof window.beginAppLoading === 'function') window.beginAppLoading();
         try {
             await loadDataForCurrentCompany();
@@ -389,7 +463,10 @@ function setupEventListeners() {
     document.getElementById('btnSettings').addEventListener('click', () => openModal('settingsModal'));
     document.getElementById('btnCustomers').addEventListener('click', () => openModal('customersModal'));
     document.getElementById('btnProducts').addEventListener('click', () => openModal('productsModal'));
-    document.getElementById('btnInvoices').addEventListener('click', () => openModal('invoicesModal'));
+    document.getElementById('btnInvoices').addEventListener('click', () => {
+        syncInvoiceCustomerFilterFromSelectedCustomer(false);
+        openModal('invoicesModal');
+    });
     document.getElementById('btnDownloadAllInvoicesPDF').addEventListener('click', () => downloadAllInvoicesPDF());
     document.getElementById('btnSheets').addEventListener('click', () => {
         window.location.href = 'sheets.html';
@@ -397,12 +474,18 @@ function setupEventListeners() {
     document.getElementById('btnClientPaymentsMenu').addEventListener('click', () => {
         window.location.href = 'client-payments.html';
     });
+    document.getElementById('btnCustomerPaymentMenu').addEventListener('click', () => {
+        window.location.href = 'customer-payment.html';
+    });
     document.getElementById('btnChangePasswordScreen').addEventListener('click', () => openModal('changePasswordModal'));
     document.getElementById('btnMigrateLocalScreen').addEventListener('click', () => openModal('migrateLocalModal'));
     document.getElementById('btnUserLogout').addEventListener('click', logoutToLoginPage);
 
     // Customer selection
-    document.getElementById('customerSelect').addEventListener('change', handleCustomerSelect);
+    document.getElementById('customerSelect').addEventListener('change', () => {
+        handleCustomerSelect();
+        syncInvoiceCustomerFilterFromSelectedCustomer(true);
+    });
     document.getElementById('btnAddCustomer').addEventListener('click', () => openCustomerForm());
 
     // Invoice items
@@ -519,6 +602,8 @@ function setupEventListeners() {
     const btnInvoiceFilterClear = document.getElementById('btnInvoiceFilterClear');
     if (btnInvoiceFilterClear) {
         btnInvoiceFilterClear.addEventListener('click', () => {
+            const customerFilter = document.getElementById('invoiceFilterCustomer');
+            if (customerFilter) customerFilter.value = '';
             if (invoiceFilterDateFromPicker) invoiceFilterDateFromPicker.clear();
             else {
                 const a = document.getElementById('invoiceFilterDateFrom');
@@ -531,6 +616,12 @@ function setupEventListeners() {
             }
             if (invoiceFilterDateToPicker) invoiceFilterDateToPicker.set('minDate', null);
             void fetchInvoicesList(true).catch((err) => console.error('Invoice filter clear:', err));
+        });
+    }
+    const invoiceFilterCustomer = document.getElementById('invoiceFilterCustomer');
+    if (invoiceFilterCustomer) {
+        invoiceFilterCustomer.addEventListener('change', () => {
+            void fetchInvoicesList(true).catch((err) => console.error('Invoice customer filter:', err));
         });
     }
 
@@ -656,6 +747,10 @@ function startAutoDataRefresh() {
                 const previousCompanyId = currentCompanyId;
                 applyCompaniesToHeader(companies);
                 const hasCompanyChanged = previousCompanyId !== currentCompanyId;
+                if (hasCompanyChanged) {
+                    const invoiceCustomerFilter = document.getElementById('invoiceFilterCustomer');
+                    if (invoiceCustomerFilter) invoiceCustomerFilter.value = '';
+                }
                 await loadDataForCurrentCompany();
                 if (hasCompanyChanged) {
                     await initializeNewInvoice();
@@ -821,6 +916,46 @@ function populateCustomerSelect() {
         console.log(`Populated ${customers.length} customers in dropdown`);
     } else {
         console.log('No customers to populate');
+    }
+}
+
+function populateInvoiceCustomerFilter() {
+    const select = document.getElementById('invoiceFilterCustomer');
+    if (!select) return;
+
+    const previousValue = select.value;
+    select.innerHTML = '<option value="">All Customers</option>';
+
+    if (customers && customers.length > 0) {
+        customers.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = customer.name || 'Unnamed Customer';
+            select.appendChild(option);
+        });
+    }
+
+    if (previousValue && Array.from(select.options).some(option => option.value === previousValue)) {
+        select.value = previousValue;
+    }
+}
+
+function syncInvoiceCustomerFilterFromSelectedCustomer(shouldFetch) {
+    const customerSelect = document.getElementById('customerSelect');
+    const invoiceCustomerFilter = document.getElementById('invoiceFilterCustomer');
+    if (!customerSelect || !invoiceCustomerFilter) return;
+
+    const selectedCustomerId = customerSelect.value || '';
+    if (selectedCustomerId && !Array.from(invoiceCustomerFilter.options).some(option => option.value === selectedCustomerId)) {
+        populateInvoiceCustomerFilter();
+    }
+
+    invoiceCustomerFilter.value = Array.from(invoiceCustomerFilter.options).some(option => option.value === selectedCustomerId)
+        ? selectedCustomerId
+        : '';
+
+    if (shouldFetch && document.getElementById('invoicesModal')?.classList.contains('show')) {
+        void fetchInvoicesList(true).catch((err) => console.error('Invoice selected customer filter:', err));
     }
 }
 
@@ -1765,11 +1900,12 @@ async function downloadAllInvoicesPDF() {
         await showWarningAlert('Please select a company first.');
         return;
     }
-    const dateOpts = getInvoiceFilterDatesForApi();
-    const listRaw = await window.electronAPI.getInvoices(currentCompanyId, { fetch_all: true, ...dateOpts });
-    const toExport = normalizeInvoicesListResponse(listRaw).data;
+    const filterOpts = getInvoiceFiltersForApi();
+    const listRaw = await window.electronAPI.getInvoices(currentCompanyId, { fetch_all: true, ...filterOpts });
+    const toExport = filterInvoicesByCustomer(normalizeInvoicesListResponse(listRaw).data, filterOpts.customer_id)
+        .sort(compareInvoicesAscending);
     if (!toExport || toExport.length === 0) {
-        await showWarningAlert('No invoices to download (check date filter if set).');
+        await showWarningAlert('No invoices to download (check filters if set).');
         return;
     }
     if (typeof window.beginAppLoading === 'function') window.beginAppLoading();
@@ -2380,12 +2516,14 @@ async function loadCustomers() {
         currentCustomersPage = 1;
         displayCustomers();
         populateCustomerSelect();
+        populateInvoiceCustomerFilter();
     } catch (error) {
         console.error('Error loading customers:', error);
         showErrorAlert('Error loading customers: ' + error.message);
         allCustomers = [];
         customers = [];
         populateCustomerSelect(); // Still populate to show "Select Customer" option
+        populateInvoiceCustomerFilter();
     }
 }
 
@@ -2683,6 +2821,7 @@ async function deleteProduct(id) {
  */
 async function loadInvoices() {
     try {
+        syncInvoiceCustomerFilterFromSelectedCustomer(false);
         await fetchInvoicesList(true);
     } catch (error) {
         console.error('Error loading invoices:', error);

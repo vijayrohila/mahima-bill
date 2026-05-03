@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Payment - Software Billing System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <header class="header">
+        <h1>Customer Payment</h1>
+        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+            <span id="customerPaymentCompanyLabel" style="font-size: 0.95rem; color: white;"></span>
+            <button id="btnBack" class="btn btn-secondary">Back to Invoice</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px; background: #f8f9fa; border-radius: 6px; padding: 1rem; border: 1px solid #e1e5ea;">
+                <div style="font-size: 0.85rem; color: #666;">Total amount</div>
+                <div id="cpSummaryTotalAmount" style="font-size: 1.5rem; font-weight: 700; margin-top: 0.35rem;">0.00</div>
+            </div>
+            <div>
+                <button id="btnDownloadCpPdf" type="button" class="btn btn-success">Download PDF</button>
+            </div>
+        </div>
+
+        <div id="cpListFilterRow" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid #e1e5ea;">
+            <span style="font-weight: 600; align-self: center;">Filter:</span>
+            <div class="form-field" style="margin-bottom: 0; min-width: 220px;">
+                <label for="cpFilterCustomer">Customer</label>
+                <select id="cpFilterCustomer">
+                    <option value="">All customers</option>
+                </select>
+            </div>
+            <div class="form-field" style="margin-bottom: 0;">
+                <label for="cpFilterDateFrom">Date from</label>
+                <input type="text" id="cpFilterDateFrom" placeholder="DD-MM-YYYY" style="background: #fff;">
+            </div>
+            <div class="form-field" style="margin-bottom: 0;">
+                <label for="cpFilterDateTo">Date to</label>
+                <input type="text" id="cpFilterDateTo" placeholder="DD-MM-YYYY" style="background: #fff;">
+            </div>
+            <button type="button" id="btnCpFilterClear" class="btn btn-secondary btn-small">Clear filters</button>
+        </div>
+
+        <div style="margin-bottom: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid #e1e5ea;">
+            <h2 style="margin: 0 0 1rem 0; font-size: 1.1rem;">Add / edit payment</h2>
+            <input type="hidden" id="cpFormId">
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div class="form-field">
+                    <label for="cpCustomerId">Customer name</label>
+                    <select id="cpCustomerId">
+                        <option value="">— Select customer —</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="cpPaymentDate">Date</label>
+                    <input type="text" id="cpPaymentDate" placeholder="DD-MM-YYYY" style="background: #fff;">
+                </div>
+                <div class="form-field">
+                    <label for="cpAmount">Amount</label>
+                    <input type="number" id="cpAmount" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-field">
+                    <label for="cpPayeeName">Name</label>
+                    <input type="text" id="cpPayeeName" placeholder="Account / payee name">
+                </div>
+                <div class="form-field">
+                    <label for="cpAccountNumber">A/C no.</label>
+                    <input type="text" id="cpAccountNumber" placeholder="Account number">
+                </div>
+                <div class="form-field">
+                    <label for="cpIfscCode">IFSC code</label>
+                    <input type="text" id="cpIfscCode" placeholder="IFSC">
+                </div>
+                <div class="form-field">
+                    <label for="cpBankName">Bank name</label>
+                    <input type="text" id="cpBankName" placeholder="Bank name">
+                </div>
+                <div class="form-field">
+                    <label for="cpSite">Site</label>
+                    <input type="text" id="cpSite" placeholder="Site">
+                </div>
+                <div class="form-field">
+                    <label for="cpRtgs">RTGS</label>
+                    <input type="text" id="cpRtgs" placeholder="RTGS details / ref.">
+                </div>
+                <div class="form-field">
+                    <label for="cpUtrNo">UTR no.</label>
+                    <input type="text" id="cpUtrNo" placeholder="UTR number">
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+                <button id="btnSaveCp" class="btn btn-primary" type="button">Save</button>
+                <button id="btnCancelCp" class="btn btn-secondary" type="button">Cancel</button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer name</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Name</th>
+                    <th>A/C no.</th>
+                    <th>IFSC code</th>
+                    <th>Bank name</th>
+                    <th>Site</th>
+                    <th>RTGS</th>
+                    <th>UTR no.</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cpTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="apiLoaderOverlay" class="api-loader-overlay" aria-hidden="true">
+        <div class="api-loader-spinner" role="status" aria-label="Loading"></div>
+    </div>
+
+    <script src="api-loader-install.js"></script>
+    <script src="customer-payment.js"></script>
+</body>
+</html>

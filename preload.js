@@ -51,6 +51,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveSheetPayment: (payment) => ipcRenderer.invoke('save-sheet-payment', payment),
   deleteSheetPayment: (id) => ipcRenderer.invoke('delete-sheet-payment', id),
 
+  getCustomerPayments: (companyId, options) => ipcRenderer.invoke('get-customer-payments', companyId, options || {}),
+  saveCustomerPayment: (payment) => ipcRenderer.invoke('save-customer-payment', payment),
+  deleteCustomerPayment: (id) => ipcRenderer.invoke('delete-customer-payment', id),
+
   // Database Location
   getDatabasePath: () => ipcRenderer.invoke('get-database-path'),
   chooseDatabaseLocation: () => ipcRenderer.invoke('choose-database-location'),

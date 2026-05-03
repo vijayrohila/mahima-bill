@@ -398,7 +398,7 @@ async function fetchSheetsPage(resetPage = true) {
         displaySheets();
     } catch (e) {
         console.error('RCC list fetch:', e);
-        showErrorAlert('Error loading RCC records: ' + (e.message || ''));
+        showErrorAlert('Error loading records: ' + (e.message || ''));
     }
 }
 
@@ -451,7 +451,7 @@ function initFilterDatePickers() {
 }
 
 /**
- * Initialize date picker for Add/Edit RCC record form (DD-MM-YYYY)
+ * Initialize date picker for Add/Edit record form (DD-MM-YYYY)
  */
 function initSheetFormDatePicker() {
     if (typeof flatpickr === 'undefined') return;
@@ -623,7 +623,7 @@ async function loadSheets() {
         await fetchSheetsPage(true);
     } catch (error) {
         console.error('Error loading sheets:', error);
-        showErrorAlert('Error loading RCC records: ' + error.message);
+        showErrorAlert('Error loading records: ' + error.message);
     }
 }
 
@@ -977,7 +977,7 @@ async function validateAndSaveRccFromRoot(root) {
         if (errorMessage.includes('UNIQUE constraint') || errorMessage.includes('unique')) {
             showErrorAlert('Error: Invoice number already exists. Invoice numbers must be unique.', invEl ? invEl.id : 'sheetFormInvoiceNo', true);
         } else {
-            showErrorAlert('Error saving RCC record: ' + errorMessage);
+            showErrorAlert('Error saving record: ' + errorMessage);
         }
     }
 }
@@ -1002,7 +1002,7 @@ async function editSheet(id) {
 }
 
 /**
- * Download RCC Records as PDF
+ * Download Records as PDF
  */
 async function downloadSheetsPDF() {
     try {
@@ -1017,12 +1017,12 @@ async function downloadSheetsPDF() {
         const rowsForPdf = norm.data;
 
         if (!rowsForPdf || rowsForPdf.length === 0) {
-            await showWarningAlert('No RCC records to download');
+            await showWarningAlert('No records to download');
             return;
         }
 
         const filteredCount = rowsForPdf.length;
-        let message = `Download ${filteredCount} filtered RCC record${filteredCount !== 1 ? 's' : ''}?`;
+        let message = `Download ${filteredCount} filtered record${filteredCount !== 1 ? 's' : ''}?`;
         if (filteredCount < norm.meta.total) {
             message += `\n\n(Filtered from ${norm.meta.total} total records)`;
         }
@@ -1069,13 +1069,13 @@ async function downloadSheetsPDF() {
             if (typeof window.endAppLoading === 'function') window.endAppLoading();
         }
     } catch (error) {
-        console.error('Error downloading RCC records PDF:', error);
+        console.error('Error downloading records PDF:', error);
         showErrorAlert('Error downloading PDF: ' + error.message);
     }
 }
 
 /**
- * Generate RCC Records HTML for PDF
+ * Generate Records HTML for PDF
  */
 function generateSheetsHTML(company, sheets, options = {}) {
     try {
@@ -1101,7 +1101,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
     <html>
     <head>
     <meta charset="UTF-8">
-    <title>RCC Records Report</title>
+    <title>Records Report</title>
     
     <style>
     @page {
@@ -1156,7 +1156,7 @@ function generateSheetsHTML(company, sheets, options = {}) {
     <table>
       <!-- HEADER -->
       <tr>
-        <td colspan="${totalCols}" class="center bold big">RCC RECORDS REPORT</td>
+        <td colspan="${totalCols}" class="center bold big">RECORDS REPORT</td>
       </tr>
       <tr>
         <td colspan="${totalCols}" class="center bold medium">${company.company_name || ''}</td>
@@ -1240,8 +1240,8 @@ function generateSheetsHTML(company, sheets, options = {}) {
     `;
         
     } catch (error) {
-        console.error('Error generating RCC records HTML:', error);
-        showErrorAlert('Error generating RCC records HTML: ' + error.message);
+        console.error('Error generating records HTML:', error);
+        showErrorAlert('Error generating records HTML: ' + error.message);
         return '';
     }
 }

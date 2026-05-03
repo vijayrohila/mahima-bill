@@ -629,7 +629,7 @@ body {
     background: #f8f9fa;
 }
 
-/* RCC records: column alignment + in-row edit */
+/* Records: column alignment + in-row edit */
 .rcc-records-table-wrap {
     width: 100%;
     overflow-x: auto;

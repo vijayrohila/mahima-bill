@@ -51,8 +51,9 @@
             <button id="btnCustomers" class="btn btn-secondary">Customers</button>
             <button id="btnProducts" class="btn btn-secondary">Products</button>
             <button id="btnInvoices" class="btn btn-secondary">Invoices</button>
-            <button id="btnSheets" class="btn btn-secondary">RCC Records</button>
+            <button id="btnSheets" class="btn btn-secondary">Records</button>
             <button id="btnClientPaymentsMenu" class="btn btn-secondary">Client Payments</button>
+            <button id="btnCustomerPaymentMenu" class="btn btn-secondary">Customer Payment</button>
             <button id="btnChangePasswordScreen" class="btn btn-secondary">Change Password</button>
             <button id="btnMigrateLocalScreen" class="btn btn-secondary">Local to MySQL</button>
             <button id="btnUserLogout" class="btn btn-secondary">Logout</button>
@@ -560,7 +561,7 @@
                 </div>
                 <div class="modal-body">
                     <p style="color: #555; margin-bottom: 1rem;">
-                        This will enqueue all local companies, customers, products, invoices and RCC records and sync them to server.
+                        This will enqueue all local companies, customers, products, invoices and records and sync them to server.
                     </p>
                     <div class="form-actions">
                         <button id="btnDownloadMigrateQuery" class="btn btn-secondary">Download SQL File</button>
@@ -579,7 +580,13 @@
                 </div>
                 <div class="modal-body">
                     <div id="invoiceDateFilterRow" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
-                        <span style="font-weight: 600; align-self: center;">Filter by date:</span>
+                        <span style="font-weight: 600; align-self: center;">Filter by:</span>
+                        <div class="form-field" style="margin-bottom: 0; min-width: 220px;">
+                            <label for="invoiceFilterCustomer">Customer</label>
+                            <select id="invoiceFilterCustomer">
+                                <option value="">All Customers</option>
+                            </select>
+                        </div>
                         <div class="form-field" style="margin-bottom: 0;">
                             <label for="invoiceFilterDateFrom">From</label>
                             <input type="text" id="invoiceFilterDateFrom" placeholder="DD-MM-YYYY" style="background: #fff;">
@@ -588,7 +595,7 @@
                             <label for="invoiceFilterDateTo">To</label>
                             <input type="text" id="invoiceFilterDateTo" placeholder="DD-MM-YYYY" style="background: #fff;">
                         </div>
-                        <button type="button" id="btnInvoiceFilterClear" class="btn btn-secondary btn-small">Clear dates</button>
+                        <button type="button" id="btnInvoiceFilterClear" class="btn btn-secondary btn-small">Clear filters</button>
                     </div>
                     <div id="invoicesSummary" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #f5f5f5; border-radius: 6px; display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;">
                         <span><strong>Total Amount (excl. GST):</strong> <span id="invoicesTotalExclGst">0.00</span></span>

@@ -364,6 +364,21 @@ ipcMain.handle('delete-sheet-payment', async (event, id) => {
   throw new Error('RCC payments are available only in API mode.');
 });
 
+ipcMain.handle('get-customer-payments', async (event, companyId, options) => {
+  if (useApi()) return apiClient.getCustomerPayments(config, companyId, options || {});
+  return db.getCustomerPayments(companyId, options || {});
+});
+
+ipcMain.handle('save-customer-payment', async (event, payment) => {
+  if (useApi()) return apiClient.saveCustomerPayment(config, payment);
+  return db.saveCustomerPayment(payment);
+});
+
+ipcMain.handle('delete-customer-payment', async (event, id) => {
+  if (useApi()) return apiClient.deleteCustomerPayment(config, id);
+  return db.deleteCustomerPayment(id);
+});
+
 ipcMain.handle('api-login', async (event, email, password) => {
   return apiClient.apiLogin(config, email, password);
 });
@@ -684,8 +699,8 @@ ipcMain.handle('download-pdf', async (event, printHTML) => {
       });
     `);
 
-    // Generate PDF
-    const pdfData = await printWindow.webContents.printToPDF({
+    // Generate PDF (landscape for wide customer payment table)
+    const printToPdfOptions = {
       printBackground: true,
       pageSize: 'A4',
       margins: {
@@ -694,18 +709,25 @@ ipcMain.handle('download-pdf', async (event, printHTML) => {
         left: 0.4,
         right: 0.4
       }
-    });
+    };
+    if (printHTML.includes('CUSTOMER PAYMENTS REPORT')) {
+      printToPdfOptions.landscape = true;
+    }
+    const pdfData = await printWindow.webContents.printToPDF(printToPdfOptions);
 
     // Get filename from HTML content
     let pdfFileName;
-    if (printHTML.includes('RCC RECORDS REPORT')) {
-      // RCC Records PDF
+    if (printHTML.includes('RECORDS REPORT')) {
+      // Records PDF
       const dateMatch = printHTML.match(/Date:\s*(\d+\/\d+\/\d+)/);
       const dateStr = dateMatch ? dateMatch[1].replace(/\//g, '-') : new Date().toISOString().slice(0, 10);
-      pdfFileName = `RCC-Records-${dateStr}.pdf`;
+      pdfFileName = `Records-${dateStr}.pdf`;
     } else if (printHTML.includes('CLIENT PAYMENTS REPORT')) {
       const dateStr = new Date().toISOString().slice(0, 10);
       pdfFileName = `Client-Payments-${dateStr}.pdf`;
+    } else if (printHTML.includes('CUSTOMER PAYMENTS REPORT')) {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      pdfFileName = `Customer-Payment-Report-${dateStr}.pdf`;
     } else if (printHTML.includes('ALL_INVOICES_PDF')) {
       // All invoices in single PDF
       const dateStr = new Date().toISOString().slice(0, 10);
